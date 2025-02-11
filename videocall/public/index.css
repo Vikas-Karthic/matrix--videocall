@@ -1,0 +1,100 @@
+/* FONT FAMILIES */
+:root {
+    --numbers-font: sans-serif;
+    --text-font: arial;
+}
+
+/* FONT SIZES */
+:root {
+    --small-sizes: small;
+    --xsmall-sizes: x-small;
+    --large-sizes: large;
+    --xlarge-sizes: x-large;
+    --medium-sizes: medium;
+    --xxlarge-sizes: xx-large ;
+}
+
+
+/* FONT WEIGHTS */
+:root {
+    --bold-weight: bold;
+    --light-weight: light;
+    --bolder-weight: 900;
+    --lighter-weight: lighter;
+}
+
+/* MAIN STYLES */
+/* GENERAL STYLES */
+body {
+    height:auto;
+    margin: 0 auto;
+    font-family: var(--text-font);
+
+    background-color: rgb(37, 37, 37);
+}
+.main {
+    height: auto;
+    width: 500px;
+    margin: 50px 415px;
+    padding: 40px;
+
+    background-color: rgb(247, 247, 247);
+    border-radius: 7px;
+}
+.content {
+    padding: 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+.content strong {
+    font-weight: 900;
+    font-size: var(--xlarge-sizes);
+}
+.content p {
+    text-align: center;
+    font-size: var(--small-sizes);
+}
+a {
+    color: blue;
+    text-decoration: underline;
+    font-weight: var(--bolder-weight);
+}
+.inputs {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
+input {
+    height: 45px;
+    width: 400px;
+    margin-bottom: 10px;
+    padding-left: 15px;
+
+    border-color: rgb(213, 213, 213);
+    border-style: solid;
+    border-radius: 5px;
+    border-width: 2px;
+    
+}
+button {
+    height: 45px;
+    width: 420px;
+    border: none;
+    background-color: #babaceea;
+    color: black;
+    border-radius: 5px;
+
+    font-weight: var(--bold-weight);
+}
+button:hover {
+    cursor: pointer;
+    opacity: 0.8;
+}
+button:active{
+    opacity: 0.5;
+}
+span:hover {
+    cursor: pointer;
+    color: rgb(0, 89, 255);
+}

@@ -1,0 +1,162 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Videocall</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.1/peerjs.min.js.map"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const ROOM_ID = "<%= roomId %>";
+    </script>
+</head>
+<body>
+    <audio id="chatAudio" src="chat_request.mp3"></audio>
+    <div class="overlay" onclick="hideInvitePopup()" style="display: none;"></div>
+    
+    <div class="invitePop" id="invitePopup">
+        <input type="text" value="Room Link..." id="roomLink" readonly>
+        <button onclick="copyToClipboard()">Copy</button>
+    </div>
+
+    <div class="main">
+        <div class="main__left">
+            <div class="main__videos">
+                <div id="video-grid"></div>
+            </div>
+            <div class="main__controls">
+                <div class="main__controls_block">
+                    <div class="main__controls_button" id="muteButton" onclick="muteUnmute()">
+                        <i class="fa fa-microphone"></i>
+                        <span>Mute</span>
+                    </div>
+                    <div class="main__controls_button" id="playPauseVideo" onclick="playStop()">
+                        <i class="fa fa-video-camera"></i>
+                        <span>Pause Video</span>
+                    </div>
+                </div>
+
+                <div class="main__controls_block">
+                    <div class="main__controls_button" id="chat__Btn" onclick="ShowChat(this)">
+                        <i class="fa fa-comment"></i>
+                        <span>Chat</span>
+                    </div>
+                    <div class="main__controls_button" id="notification__Btn" onclick="ShowNotifications()">
+                        <i class="fa fa-bell"></i>
+                        <span>Notifications</span>
+                    </div>
+                    <div class="main__controls_button" onclick="showInvitePopup()">
+                        <i class="fa fa-user-plus"></i>
+                        <span>Invite People</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main__right">
+            <div class="main__chat">
+                <div id="main__chat__window">
+                    <ul id="all_messages"></ul>
+                </div>
+                <input type="text" id="chat_message" placeholder="Type a message...">
+                <button class="sendMsg" id="sendMsg">
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="notification-section" id="notificationSection">
+            <h4>Notifications</h4>
+            <ul id="notificationList"></ul>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Videocall</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.1/peerjs.min.js.map"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const ROOM_ID = "<%= roomId %>";
+    </script>
+</head>
+<body>
+    <audio id="chatAudio" src="chat_request.mp3"></audio>
+    <div class="overlay" onclick="hideInvitePopup()" style="display: none;"></div>
+    
+    <div class="invitePop" id="invitePopup">
+        <input type="text" value="Room Link..." id="roomLink" readonly>
+        <button onclick="copyToClipboard()">Copy</button>
+    </div>
+
+    <div class="main">
+        <div class="main__left">
+            <div class="main__videos">
+                <div id="video-grid"></div>
+            </div>
+            <div class="main__controls">
+                <div class="main__controls_block">
+                    <div class="main__controls_button" id="muteButton" onclick="muteUnmute()">
+                        <i class="fa fa-microphone" id="audio-m"></i>
+                        <span>Mute</span>
+                    </div>
+                    <div class="main__controls_button" id="playPauseVideo" onclick="playStop()">
+                        <i class="fa fa-video-camera" id="video-m"></i>
+                        <span>Pause Video</span>
+                    </div>
+                </div>
+
+                <div class="main__controls_block">
+                    <div class="main__controls_button" id="chat__Btn" onclick="ShowChat(this)">
+                        <i class="fa fa-comment"></i>
+                        <span>Chat</span>
+                    </div>
+                    <div class="main__controls_button" id="notification__Btn" onclick="ShowNotifications()">
+                        <i class="fa fa-bell"></i>
+                        <span>Notifications</span>
+                    </div>
+                    <div class="main__controls_button" onclick="showInvitePopup()">
+                        <i class="fa fa-user-plus"></i>
+                        <span>Invite People</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main__right">
+            <div class="main__chat">
+                <div id="main__chat__window">
+                    <ul id="all_messages"></ul>
+                </div>
+                <input type="text" id="chat_message" placeholder="Type a message...">
+                <button class="sendMsg" id="sendMsg">
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="notification-section" id="notificationSection">
+            <h4>Notifications</h4>
+            <ul id="notificationList"></ul>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
