@@ -1,0 +1,152 @@
+.tools-section {
+    background-color: rgb(59, 59, 59);
+    height: 535.3px;
+    border-radius: 5px;
+    padding: 15px 22px 0;
+}
+
+
+
+.row label {
+    font-size: large;
+    font-weight: bold;
+}
+input[type=range] {
+    accent-color:rgb(0, 136, 255);
+}
+input[type=range]:hover{
+   cursor: pointer;
+}
+
+.tools-section .row{
+    margin-bottom: 20px;
+}
+
+.row .options {
+    margin: 10px 0 0 5px;
+}
+
+.row .options .options{
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.options :where(span,label)
+{
+    padding-left: 10px;
+}
+li.options:is(:hover,.active) img {
+    filter: invert(45%) sepia(86%) saturate(4016%) hue-rotate(184deg) brightness(95%) contrast(90%);
+}
+
+.options:hover > span,
+.options.active > span
+ {
+    color: rgb(39, 150, 247);
+}
+
+.options #fill-color {
+    height: 15px;
+    width: 15px;
+    accent-color:rgb(0, 136, 255);
+}
+
+#fill-color:checked ~ span {
+    color:rgb(30, 140, 236);
+}
+li.options #color-picker{
+    opacity: 0;
+    cursor: pointer;
+}
+.options #size-slider{
+    width: 100%;
+    margin-top: 10px;
+}
+.colors .options {
+    display: flex;
+    justify-content: space-evenly;
+}
+.colors li.options {
+    height: 20px;
+    width: 20px;
+    background: red;
+    border-radius: 50%;
+    margin-top: 7px; 
+}
+
+/* TYPE-1 Differentiation */
+/*.options.selected {
+    border: 3px solid #007bff;
+    transform: rotate(10deg);
+    transition: transform 0.2s ease-in-out;
+} */
+
+/* TYPE-2 Differentiation */
+.options.selected {
+    border: 3px solid #007bff; /* Blue border for selected item */
+    box-shadow: 0px 0px 10px rgba(0, 123, 255, 0.5); /* Glowing effect */
+    transform: scale(1.2); /* Scale up the selected option */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#table {
+    background-color: #f4f4f4;
+    border-radius: 5px;
+}
+
+
+.colors li.options:nth-child(1)
+{
+    background-color: #ebeb00;
+}
+.colors li.options:nth-child(5)
+{
+    background-color: #000;
+}
+.colors li.options:nth-child(3)
+{
+    background-color: #E02020;
+}
+.colors li.options:nth-child(4)
+{
+    background-color: #72dd00;
+}
+.colors li.options:nth-child(2)
+{
+    background-color: #1e80f8;
+}
+.buttons button {
+    width: 100%;
+    color: #fff;
+    padding: 11px 0;
+    font-size: 0.9rem;
+    margin-bottom: 13px;
+    border-style: solid;
+    background: none;
+    border-radius: 5px;
+}
+.buttons .clear-canvas{
+    background: #ffffff;
+    color: #4A98F7;
+    border: 1px solid #4A98F7;
+}
+.buttons .save-img{
+    background: #4A98F7;
+    border: 1px solid #4A98F7;
+}
+.buttons .clear-canvas:hover, .buttons .save-img:hover{
+    cursor: pointer;
+    opacity: 0.9;
+}
+.buttons .clear-canvas:active, .buttons .save-img:active{
+    cursor: pointer;
+    opacity: 0.7;
+}
+.next-page {
+    display: none; /* Hide the next page by default */
+}
+
+
+

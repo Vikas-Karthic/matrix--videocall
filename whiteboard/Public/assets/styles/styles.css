@@ -1,0 +1,291 @@
+/* FONT FAMILIES */
+:root {
+    --numbers-font: sans-serif;
+    --text-font: arial;
+}
+
+/* FONT SIZES */
+:root {
+    --small-sizes: small;
+    --xsmall-sizes: x-small;
+    --large-sizes: large;
+    --xlarge-sizes: x-large;
+    --medium-sizes: medium;
+    --xxlarge-sizes: xx-large ;
+}
+
+
+/* FONT WEIGHTS */
+:root {
+    --bold-weight: bold;
+    --light-weight: light;
+    --bolder-weight: bolder;
+    --lighter-weight: lighter;
+}
+
+/* MAIN STYLES */
+/* GENERAL STYLES */
+body {
+    height:auto;
+    margin: 0 auto;
+    font-family: var(--text-font);
+
+    background-color: rgb(37, 37, 37);
+    color: white;
+}
+
+header {
+    display: flex;
+    padding: 10px 24px;
+    align-items: center;
+    justify-content: space-between;
+}
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+img {
+    height: 25px;
+}
+
+/* CUSTOM STYLES */
+/* HEADER SECTION */
+.logo {
+    height: 65px;
+    width: 70px;
+    border-radius: 5px;
+}
+header > div {
+    color: rgb(209, 209, 209);
+    font-size: var(--large-sizes);
+}
+
+.access-section {
+    display: flex;
+    gap: 20px;
+}
+.generate-pdf {
+    height: 35px;
+    width: 35px;
+}
+.tools {
+    height: 30px;
+}
+
+
+/* MAIN SECTION */
+.hidden {
+    display: none;
+}
+
+/* Full width for whiteboard when tools are hidden */
+.full-width .whiteboard-section {
+    grid-column: span 2;
+    width: 100%;
+}
+
+.main-body {
+    /* height: auto; */
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 20px;
+    padding: 30px 24px;
+}
+
+/* WHITEBOARD SECTION */
+
+.whiteboard-section{
+    background-color: white;
+    height: auto;
+    border-radius: 5px;
+    max-height: 100vh; /* Set the visible height */
+    overflow-y: scroll;
+}
+.whiteboard-section canvas {
+    width: 100%;
+    height: 2000px;
+    
+
+}
+
+/* UNDO / REDO - STYLES */
+.undo-redo-container {
+    display: flex;
+    justify-content: end;
+    gap: 15px;
+    padding: 5px;
+    margin-left: 100px;
+}
+.undo, .redo {
+    height: 35px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+}
+.undo:hover, .redo:hover, .right-page:hover, .left-page:hover, .generate-pdf:hover, .tools:hover ,.open-image-btn:hover {
+    cursor: pointer;
+    transform: scale(1.1) rotate(5deg); 
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); 
+}
+.undo:active, .redo:active, .left-page:active, .right-page:active, .generate-pdf:active, .tools:active ,.open-image-btn:active{
+    transform: scale(1.05) rotate(-3deg);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3); 
+    transition: transform 0.1s ease;
+}
+
+/* Toolbar Page 2 */
+.tools-page-switch {
+    display: flex;
+    justify-content: space-between;
+    z-index: 9;
+}
+.tools-page-switch img{
+    height: 35px;
+}
+
+.open-image-btn{
+    height: 35px;
+    width: 35px;
+   
+}
+.whiteboard-container {
+    width: 100%; /* Full width */
+    max-width: 1200px; /* Optional: Limit max width */
+    margin: 0 auto; /* Center on the page */
+    overflow-y: auto; /* Enable scrolling if needed */
+  }
+  
+  canvas {
+    display: block;
+    
+  }
+  
+
+/* Media Queries for Responsiveness */
+
+/* For small devices (mobile phones) */
+@media only screen and (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo {
+        height: 50px;
+        width: 55px;
+    }
+
+    .main-body {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+
+    .tools-section {
+        grid-column: span 1;
+    }
+
+    .whiteboard-section {
+        
+        overflow-y: auto;
+        position: relative;
+    }
+    
+    .whiteboard-section canvas {
+       display: block;
+    }
+
+    .undo, .redo {
+        height: 30px;
+    }
+
+    button {
+        font-size: var(--small-sizes);
+    }
+
+    .settings-icon {
+        height: 18px;
+        width: 25px;
+    }
+
+    .row .options span {
+        font-size: var(--xsmall-sizes);
+    }
+}
+
+/* For tablets and medium-sized devices */
+@media only screen and (min-width: 601px) and (max-width: 900px) {
+    header {
+        padding: 5px 16px;
+    }
+
+    .logo {
+        height: 60px;
+        width: 65px;
+    }
+
+    .main-body {
+        grid-template-columns: 1fr 2fr;
+        padding: 20px 18px;
+    }
+
+    .whiteboard-section {
+        height: 500px;
+    }
+
+    .undo, .redo {
+        height: 32px;
+    }
+
+    button {
+        font-size: var(--small-sizes);
+    }
+
+    .settings-icon {
+        height: 18px;
+        width: 25px;
+    }
+
+    .row .options span {
+        font-size: var(--small-sizes);
+    }
+}
+
+/* For larger devices (laptops/desktops) */
+@media only screen and (min-width: 901px) {
+    header {
+        padding: 10px 24px;
+    }
+
+    .logo {
+        height: 70px;
+        width: 75px;
+    }
+
+    .main-body {
+        grid-template-columns: 1fr 3fr;
+        padding: 30px 24px;
+    }
+
+    .whiteboard-section {
+        height: 550px;
+    }
+
+    .undo, .redo {
+        height: 35px;
+    }
+
+    button {
+        font-size: var(--medium-sizes);
+    }
+
+    .settings-icon {
+        height: 20px;
+        width: 30px;
+    }
+
+    .row .options span {
+        font-size: var(--medium-sizes);
+    }
+}
+
+
+

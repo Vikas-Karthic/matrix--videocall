@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/styles/styles.css">
+    <link rel="stylesheet" href="./assets/styles/toolbar.css">
+    <script src="./assets/scripts/script.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"
+        integrity="sha512-luMnTJZ7oEchNDZAtQhgjomP1eZefnl82ruTH/3Oj/Yu5qYtwL7+dVRccACS/Snp1lFXq188XFipHKYE75IaQQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <title>Matrix</title>
+</head>
+
+<body>
+    <header>
+        <img src="./assets/images/logo.jpeg" class="logo">
+        <div>
+            <p>Classroom</p>
+        </div>
+        <div class="access-section">
+            <img class="tools" src="./assets/images/tools-icon.png">
+            <img class="open-image-btn" src="./assets/images/open-icon-files.jpg">
+            <img class="generate-pdf" src="./assets/images/pdf-download-icon.png">
+        </div>
+    </header>
+
+    <div class="main-body full-width">
+        <div class="tools-section hidden">
+            <div class="row">
+                <label class="title">Shapes</label>
+                <ul class="options">
+                    <li class="options tool" id="rectangle">
+                        <img src="./assets/images/rectangle-icon.png">
+                        <span>Rectangle</span>
+                    </li>
+                    <li class="options tool" id="circle">
+                        <img src="./assets/images/circle-icon.png">
+                        <span>Circle</span>
+                    </li>
+                    <li class="options tool" id="triangle">
+                        <img src="./assets/images/triangle-icon.png">
+                        <span>Triangle</span>
+                    </li>
+                    <li class="options">
+                        <input type="checkbox" id="fill-color">
+                        <span>Fill Color</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="row">
+                <label class="title">Options</label>
+                <ul class="options">
+                    <li class="options active tool" id="brush">
+                        <img src="./assets/images/brush-icon.png">
+                        <span>Brush</span>
+                    </li>
+                    <li class="options tool" id="eraser">
+                        <img src="./assets/images/eraser-icon.png">
+                        <span>Eraser</span>
+                    </li>
+                    <li class="options">
+                        <input type="range" id="size-slider" min="1" max="30" value="5">
+                    </li>
+                </ul>
+            </div>
+            <div class="row colors">
+                <label class="title">Colors</label>
+                <ul class="options">
+                    <li class="options"></li>
+                    <li class="options"></li>
+                    <li class="options"></li>
+                    <li class="options"></li>
+                    <li class="options selected">
+                        <input type="color" id="color-picker" value="#000000">
+                    </li>
+                </ul>
+            </div>
+            <div class="row buttons">
+                <button class="clear-canvas">Clear Canvas</button> <br>
+                <button class="save-img">Extend Canvas</button>
+            </div>
+            <div class="tools-page-switch">
+                <img class="right-page" src="./assets/images/right-arrow-icon.png" id="next-page-btn">
+            </div>
+        </div>
+        <div class="next-page" id="next-page">
+            <label class="title">Second set of tools</label>
+            <ul class="options">
+                <li class="options tool" id="table">
+                    <img src="./assets/images/table-icon.png">
+                    <span>Table</span>
+                </li>
+                <li class="options tool">
+                    <button class="toggle-image-mode">Enable Image Mode</button>
+                    <button class="toggle-spotlight-btn">Spotlight</button>
+                </li>
+            </ul>
+            <div class="tools-page-switch">
+                <img class="left-page" src="./assets/images/left-arrow-icon.png" id="prev-page-btn">
+            </div>
+        </div>
+        <div class="whiteboard-section">
+        
+                <canvas class="canvas"></canvas>
+            </div>
+            <div class="undo-redo-container">
+                <img src="./assets/images/undo-icon.png" class="undo">
+                <img src="./assets/images/redo-icon.png" class="redo">
+                <button class="addcanvas">Add</button>
+            </div>
+    </div>
+</body>
+
+</html>

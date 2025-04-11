@@ -1,0 +1,769 @@
+const canvas = document.querySelector("canvas"),
+  toolBtns = document.querySelectorAll(".tool"),
+  fillColor = document.querySelector("#fill-color"),
+  sizeSlider = document.querySelector("#size-slider"),
+  colorBtns = document.querySelectorAll(".colors li.options"),
+  colorPicker = document.querySelector("#color-picker"),
+  clearCanvas = document.querySelector(".clear-canvas"),
+  saveImg = document.querySelector(".save-img"),
+  undoBtn = document.querySelector(".undo"),
+  redoBtn = document.querySelector(".redo"),
+  generatePdfBtn = document.querySelector(".generate-pdf"),
+  ctx = canvas.getContext("2d", { willReawillReadFrequently: true });
+
+var socket = io.connect("http://localhost:8080/"); // Connect to the server
+
+let prevMouseX,
+  prevMouseY,
+  snapshot,
+  isDrawing = false,
+  selectedTool = "brush",
+  brushWidth = 5,
+  selectedColor = "#000000";
+
+// For UNDO & REDO operation
+let undoStack = [];
+let redoStack = [];
+let tableStack = []; // Stack for storing table actions
+let redoTableStack = []; // Stack for redo table actions
+
+// Update the selected tool
+
+// Update the selected color
+colorBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelector(".options .selected").classList.remove("selected");
+    btn.classList.add("selected");
+    selectedColor = window
+      .getComputedStyle(btn)
+      .getPropertyValue("background-color");
+  });
+});
+
+// Handle color picker change
+colorPicker.addEventListener("input", () => {
+  const pickerBtn = colorPicker.parentElement; // Select the parent button of the picker
+  pickerBtn.style.backgroundColor = colorPicker.value; // Change the button color
+  pickerBtn.click(); // Simulate a click to select the new color
+});
+
+sizeSlider.addEventListener("change", () => (brushWidth = sizeSlider.value)); // Update brush size
+
+// Function to set canvas background
+const setCanvasBackground = () => {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = selectedColor;
+};
+
+// Save the current canvas state as an image
+const saveCanvasState = () => {
+  return canvas.toDataURL(); // Save canvas image as dataURL
+};
+
+// Restore the saved canvas state
+const restoreCanvasState = (imageData) => {
+  const img = new Image();
+  img.src = imageData;
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw the image to fit canvas
+  };
+};
+
+// Recalculate the canvas size and restore content
+const resizeCanvas = () => {
+  const canvasContent = saveCanvasState(); // Save the current canvas content
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  setCanvasBackground(); // Reset the canvas background
+  restoreCanvasState(canvasContent); // Restore the saved canvas content
+};
+
+// Call resizeCanvas on load
+window.addEventListener("load", resizeCanvas);
+
+// Save the current canvas state in undoStack and clear redoStack if needed
+const saveState = (stack, keepRedo = false) => {
+  if (!keepRedo) {
+    redoStack = []; // Clear redo stack when a new action is performed
+  }
+  stack.push(canvas.toDataURL()); // Save canvas image as dataURL
+};
+
+// Save the table state to the undo stack
+const saveTableState = (stack, tableData, keepRedo = false) => {
+  if (!keepRedo) {
+    redoTableStack = []; // Clear redo table stack when a new action is performed
+  }
+  stack.push(tableData); // Save table data
+};
+
+// Restore a state from the given stack (undo or redo)
+const restoreState = (popStack, pushStack, broadcast = true) => {
+  if (popStack.length > 0) {
+    const imageDataURL = popStack.pop(); // Get the last state from the undo/redo stack
+    pushStack.push(canvas.toDataURL()); // Save the current state to the opposite stack before popping
+    restoreCanvasState(imageDataURL);
+    if (broadcast) {
+      emitDrawingData(popStack === undoStack ? "undo" : "redo", {
+        state: imageDataURL,
+      });
+    }
+  }
+};
+
+// Restore the table state from the stack
+const restoreTableState = (popStack, pushStack, broadcast = true) => {
+  if (popStack.length > 0) {
+    const tableData = popStack.pop();
+    pushStack.push(tableData); // Push the current table state to redo stack
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+    setCanvasBackground(); // Reset background
+
+    // Redraw all tables from the stack
+    tableStack.forEach((table) => {
+      drawTable(
+        table.rows,
+        table.cols,
+        table.cellWidth,
+        table.cellHeight,
+        table.startX,
+        table.startY
+      );
+    });
+    if (broadcast) {
+      emitDrawingData(popStack === tableStack ? "undoTable" : "redoTable");
+    }
+  }
+};
+
+// Emit drawing data to the server
+const emitDrawingData = (action, data) => {
+  socket.emit("drawing", { action, data });
+};
+
+// Function to draw a table on the canvas
+const drawTable = (rows, cols, cellWidth, cellHeight, startX, startY) => {
+  ctx.beginPath();
+  // Draw rows
+  for (let i = 0; i <= rows; i++) {
+    ctx.moveTo(startX, startY + i * cellHeight);
+    ctx.lineTo(startX + cols * cellWidth, startY + i * cellHeight);
+  }
+  // Draw columns
+  for (let j = 0; j <= cols; j++) {
+    ctx.moveTo(startX + j * cellWidth, startY);
+    ctx.lineTo(startX + j * cellWidth, startY + rows * cellHeight);
+  }
+  ctx.strokeStyle = selectedColor;
+  ctx.lineWidth = brushWidth;
+  ctx.stroke();
+};
+
+// Event listener for the table button
+document.getElementById("table").addEventListener("click", () => {
+  let rows = parseInt(prompt("Enter number of rows:"));
+  let cols = parseInt(prompt("Enter number of columns:"));
+  let cellWidth = parseInt(prompt("Enter cell width:"));
+  let cellHeight = parseInt(prompt("Enter cell height:"));
+  let startX = 50,
+    startY = 50; // Initial coordinates
+
+  const tableData = { rows, cols, cellWidth, cellHeight, startX, startY };
+  drawTable(rows, cols, cellWidth, cellHeight, startX, startY);
+
+  // Save the table state for undo
+  saveTableState(tableStack, tableData);
+  emitDrawingData("table", tableData); // Emit table creation to server
+});
+
+// Handle undo
+undoBtn.addEventListener("click", () => {
+  if (undoStack.length > 0) {
+    restoreState(undoStack, redoStack); // Undo the last action
+  } else if (tableStack.length > 0) {
+    restoreTableState(tableStack, redoTableStack);
+  } else {
+    alert("Nothing to undo");
+  }
+});
+
+// Handle redo
+redoBtn.addEventListener("click", () => {
+  if (redoStack.length > 0) {
+    restoreState(redoStack, undoStack);
+  } else if (redoTableStack.length > 0) {
+    restoreTableState(redoTableStack, tableStack);
+  } else {
+    alert("Nothing to redo");
+  }
+});
+
+// Drawing Rectangle
+const drawRect = (e) => {
+  ctx.putImageData(snapshot, 0, 0);
+  let width = e.offsetX - prevMouseX;
+  let height = e.offsetY - prevMouseY;
+  ctx.strokeRect(prevMouseX, prevMouseY, width, height);
+  emitDrawingData("rectangle", {
+    x: prevMouseX,
+    y: prevMouseY,
+    width,
+    height,
+    fill: fillColor.checked,
+  });
+};
+
+// Drawing Circle
+const drawCircle = (e) => {
+  ctx.putImageData(snapshot, 0, 0);
+  let radius = Math.sqrt(
+    Math.pow(prevMouseX - e.offsetX, 2) + Math.pow(prevMouseY - e.offsetY, 2)
+  );
+  ctx.beginPath();
+  ctx.arc(prevMouseX, prevMouseY, radius, 0, 2 * Math.PI);
+  emitDrawingData("circle", { x: prevMouseX, y: prevMouseY, radius });
+};
+
+// Drawing Triangle
+const drawTriangle = (e) => {
+  ctx.putImageData(snapshot, 0, 0);
+  ctx.beginPath();
+  ctx.moveTo(prevMouseX, prevMouseY);
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.lineTo(prevMouseX * 2 - e.offsetX, e.offsetY);
+  ctx.closePath();
+  emitDrawingData("triangle", {
+    x1: prevMouseX,
+    y1: prevMouseY,
+    x2: e.offsetX,
+    y2: e.offsetY,
+    fill: fillColor.checked,
+  });
+};
+
+const floodFill = (startX, startY, fillColor) => {
+  const pixelStack = [[startX, startY]];
+  const startColor = ctx.getImageData(startX, startY, 1, 1).data;
+
+  const matchStartColor = (pixelData) => {
+    return (
+      pixelData[0] === startColor[0] &&
+      pixelData[1] === startColor[1] &&
+      pixelData[2] === startColor[2] &&
+      pixelData[3] === startColor[3]
+    );
+  };
+
+  const colorPixel = (x, y) => {
+    const pixelPos = (y * canvas.width + x) * 4;
+    ctxImageData.data[pixelPos] = fillColor[0];
+    ctxImageData.data[pixelPos + 1] = fillColor[1];
+    ctxImageData.data[pixelPos + 2] = fillColor[2];
+    ctxImageData.data[pixelPos + 3] = fillColor[3];
+  };
+
+  const ctxImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  while (pixelStack.length) {
+    const [x, y] = pixelStack.pop();
+
+    let pixelPos = (y * canvas.width + x) * 4;
+    while (
+      y >= 0 &&
+      matchStartColor(ctxImageData.data.slice(pixelPos, pixelPos + 4))
+    ) {
+      y--;
+      pixelPos = (y * canvas.width + x) * 4;
+    }
+
+    y++;
+    pixelPos = (y * canvas.width + x) * 4;
+
+    let reachLeft = false;
+    let reachRight = false;
+
+    while (
+      y < canvas.height &&
+      matchStartColor(ctxImageData.data.slice(pixelPos, pixelPos + 4))
+    ) {
+      colorPixel(x, y);
+
+      if (x > 0) {
+        if (matchStartColor(ctxImageData.data.slice(pixelPos - 4, pixelPos))) {
+          if (!reachLeft) {
+            pixelStack.push([x - 1, y]);
+            reachLeft = true;
+          }
+        } else if (reachLeft) {
+          reachLeft = false;
+        }
+      }
+
+      if (x < canvas.width - 1) {
+        if (
+          matchStartColor(ctxImageData.data.slice(pixelPos + 4, pixelPos + 8))
+        ) {
+          if (!reachRight) {
+            pixelStack.push([x + 1, y]);
+            reachRight = true;
+          }
+        } else if (reachRight) {
+          reachRight = false;
+        }
+      }
+
+      y++;
+      pixelPos = (y * canvas.width + x) * 4;
+    }
+  }
+
+  ctx.putImageData(ctxImageData, 0, 0);
+};
+
+// Basic drawing script
+const startDraw = (e) => {
+  isDrawing = true;
+  prevMouseX = e.offsetX;
+  prevMouseY = e.offsetY;
+  ctx.beginPath();
+  ctx.lineWidth = brushWidth;
+  ctx.strokeStyle = selectedTool === "eraser" ? "#fff" : selectedColor;
+  ctx.fillStyle = selectedColor;
+  snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height); // Save the current canvas state
+  saveState(undoStack); // Save the current state to undo stack
+  emitDrawingData("start", {
+    tool: selectedTool,
+    color: selectedColor,
+    brushWidth,
+  });
+};
+
+const drawing = (e) => {
+  if (!isDrawing) return;
+  ctx.putImageData(snapshot, 0, 0);
+  if (selectedTool === "brush" || selectedTool === "eraser") {
+    ctx.strokeStyle = selectedTool === "eraser" ? "#fff" : selectedColor;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    emitDrawingData("draw", {
+      prevX: prevMouseX,
+      prevY: prevMouseY,
+      currX: e.offsetX,
+      currY: e.offsetY,
+      tool: selectedTool,
+    });
+    prevMouseX = e.offsetX;
+    prevMouseY = e.offsetY;
+  } else if (selectedTool === "rectangle") {
+    drawRect(e);
+  } else if (selectedTool === "circle") {
+    drawCircle(e);
+  } else if (selectedTool === "triangle") {
+    drawTriangle(e);
+  } else if (selectedTool === "fill") {
+    // Handle the fill tool
+    const color = hexToRgba(selectedColor); // Convert selected color to rgba
+    floodFill(x, y, color);
+    emitDrawingData("fill", { x, y, color });
+  }
+};
+
+const hexToRgba = (hex) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b, 255]; // Add alpha 255 for full opacity
+};
+
+// Mouse and touch event handlers for fill tool
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", drawing);
+canvas.addEventListener("mouseup", () => {
+  isDrawing = false;
+  emitDrawingData("end");
+});
+
+// Touch event listeners
+canvas.addEventListener("touchstart", (e) => {
+  e.preventDefault(); // Prevent scrolling
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  startDraw(touch.clientX - rect.left, touch.clientY - rect.top);
+});
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault(); // Prevent scrolling
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  drawing(touch.clientX - rect.left, touch.clientY - rect.top);
+});
+canvas.addEventListener("touchend", () => {
+  isDrawing = false;
+  emitDrawingData("end");
+});
+
+// Update tool button listeners for fill tool
+toolBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelector(".options .active").classList.remove("active");
+    btn.classList.add("active");
+    selectedTool = btn.id;
+  });
+  btn.addEventListener("touchstart", () => {
+    document.querySelector(".options .active").classList.remove("active");
+    btn.classList.add("active");
+    selectedTool = btn.id;
+  });
+});
+
+// SOCKET.IO INTEGRATION: Listening for updates from the server
+socket.on("drawing", (data) => {
+  switch (data.action) {
+    case "draw":
+      ctx.beginPath();
+      ctx.moveTo(data.data.prevX, data.data.prevY);
+      ctx.lineTo(data.data.currX, data.data.currY);
+      ctx.strokeStyle = data.data.tool === "eraser" ? "#fff" : data.data.color;
+      ctx.lineWidth = data.data.brushWidth;
+      ctx.stroke();
+      break;
+
+    case "rectangle":
+      ctx.beginPath();
+      ctx.lineWidth = brushWidth;
+      ctx.strokeStyle = selectedColor;
+      ctx.fillStyle = selectedColor;
+      if (data.data.fill) {
+        ctx.fillRect(
+          data.data.x,
+          data.data.y,
+          data.data.width,
+          data.data.height
+        );
+      } else {
+        ctx.strokeRect(
+          data.data.x,
+          data.data.y,
+          data.data.width,
+          data.data.height
+        );
+      }
+      break;
+
+    case "circle":
+      ctx.beginPath();
+      ctx.lineWidth = brushWidth;
+      ctx.strokeStyle = selectedColor;
+      ctx.fillStyle = selectedColor;
+      ctx.arc(data.data.x, data.data.y, data.data.radius, 0, 2 * Math.PI);
+      data.data.fill ? ctx.fill() : ctx.stroke();
+      break;
+
+    case "triangle":
+      ctx.beginPath();
+      ctx.lineWidth = brushWidth;
+      ctx.strokeStyle = selectedColor;
+      ctx.fillStyle = selectedColor;
+      ctx.moveTo(data.data.x1, data.data.y1);
+      ctx.lineTo(data.data.x2, data.data.y2);
+      ctx.lineTo(data.data.x1 * 2 - data.data.x2, data.data.y2);
+      ctx.closePath();
+      data.data.fill ? ctx.fill() : ctx.stroke();
+      break;
+
+    case "table":
+      drawTable(
+        data.data.rows,
+        data.data.cols,
+        data.data.cellWidth,
+        data.data.cellHeight,
+        data.data.startX,
+        data.data.startY
+      );
+      tableStack.push(data.data);
+      break;
+
+    case "clear":
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setCanvasBackground();
+      break;
+
+    case "undo":
+    case "redo":
+      restoreCanvasState(data.data.state);
+      break;
+
+    case "undoTable":
+      restoreTableState(tableStack, redoTableStack, false);
+      break;
+
+    case "redoTable":
+      restoreTableState(redoTableStack, tableStack, false);
+      break;
+
+    case "tool-change":
+      selectedTool = data.data.tool;
+      break;
+
+    case "size-change":
+      brushWidth = data.data.brushWidth;
+      break;
+
+    case "color-change":
+      selectedColor = data.data.color;
+      break;
+  }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const toolsIcon = document.querySelector(".tools");
+  const toolsSection = document.querySelector(".tools-section");
+  const mainBody = document.querySelector(".main-body");
+  const nextPageBtn = document.getElementById("next-page-btn");
+  const nextPage = document.getElementById("next-page");
+  const prevPageBtn = document.getElementById("prev-page-btn"); // Optional: if you have a back button
+
+  // Toggle the tools section visibility
+  toolsIcon.addEventListener("click", () => {
+    toolsSection.classList.toggle("hidden");
+    mainBody.classList.toggle("full-width");
+    toolsSection.style.display = null;
+    nextPage.style.display = null;
+    nextPageBtn.style.display = "block";
+    // After toggling, resize the canvas but retain its content
+    resizeCanvas();
+  });
+
+  // Handle navigation to the next page
+  nextPageBtn.addEventListener("click", () => {
+    toolsSection.style.display = "none"; // Hide tools section
+    nextPage.style.display = "block"; // Show the next page
+    nextPageBtn.style.display = "none"; // Hide the "Next" button
+    resizeCanvas(); // Resize canvas after page change
+  });
+
+  prevPageBtn?.addEventListener("click", () => {
+    nextPage.style.display = "none"; /* Hide the next page */
+    toolsSection.style.display = "block"; /* Show the tools section again */
+    nextPageBtn.style.display = "block";
+    resizeCanvas(); /* Show the "Next" button */
+  });
+  // Adjust canvas size on window resize
+  window.addEventListener("resize", resizeCanvas);
+});
+
+// Save the canvas image as a file when saveImg button is clicked
+let imagesArray = []; // Array to hold multiple images
+
+// Function to save the current canvas image to the imagesArray
+const saveCanvasImage = () => {
+  const image = canvas.toDataURL("image/png"); // Convert canvas content to image
+  imagesArray.push(image); // Add the image to the array
+  alert("Image saved! You can add more images or generate the PDF.");
+};
+
+// When saveImg button is clicked, save the current canvas image
+saveImg.addEventListener("click", () => {
+  saveCanvasImage(); // Save the current canvas image
+});
+
+// Function to generate a PDF from saved canvas images
+const generatePDF = () => {
+  if (imagesArray.length === 0) {
+    alert("No images to create a PDF. Please save some images first.");
+    return;
+  }
+
+  // Prompt the user for the PDF name
+  let pdfName = prompt("Enter the name for the PDF:", "drawings");
+  if (!pdfName) {
+    pdfName = "drawings"; // Default name if the user doesn't provide one
+  }
+
+  // Import jsPDF
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  imagesArray.forEach((img, index) => {
+    if (index > 0) {
+      pdf.addPage(); // Add a new page for each image after the first
+    }
+    pdf.addImage(img, "PNG", 10, 10, 180, 160); // Add the image to the PDF
+  });
+
+  // Save the PDF with the provided name
+  pdf.save(`${pdfName}.pdf`);
+
+  // Clear the array after PDF generation
+  imagesArray = [];
+};
+
+// Add a button for generating the PDF
+// generatePdfBtn.addEventListener("click", () => {
+//   generatePDF(); // Generate the PDF when the button is clicked
+// });
+
+// Add event listener for clear canvas button
+clearCanvas.addEventListener("click", () => {
+  // Save the current state to undoStack before clearing
+  saveState(undoStack);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  setCanvasBackground();
+  emitDrawingData("clear"); // Broadcast the clear action
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// // Spotlight properties
+// Spotlight properties
+let spotlightEnabled = false;
+let spotlightX = 0,
+  spotlightY = 0; // Spotlight center
+let spotlightRadius = 100; // Spotlight radius
+
+// Tracks the full canvas content to preserve drawings
+let fullCanvasSnapshot;
+
+// Save the full canvas content as a snapshot
+const saveCanvasSnapshot = () => {
+  fullCanvasSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+};
+
+// Restore the full canvas content from the snapshot
+const restoreCanvasSnapshot = () => {
+  if (fullCanvasSnapshot) {
+    ctx.putImageData(fullCanvasSnapshot, 0, 0);
+  }
+};
+
+// Function to draw the spotlight effect with zoom and transparency
+const drawSpotlight = () => {
+  if (!spotlightEnabled) return;
+
+  // Restore the original canvas content
+  restoreCanvasSnapshot();
+
+  // Draw a semi-transparent overlay over the entire canvas (darkened surroundings)
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Save canvas state for the spotlight effect
+  ctx.save();
+
+  // Clip the canvas to the circular spotlight area
+  ctx.beginPath();
+  ctx.arc(spotlightX, spotlightY, spotlightRadius, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Draw the zoomed-in spotlight area
+  ctx.save();
+  ctx.translate(
+    spotlightX - spotlightRadius * 2,
+    spotlightY - spotlightRadius * 2
+  );
+  ctx.scale(2, 2); // Adjust zoom scale
+  ctx.drawImage(canvas, 0, 0); // Redraw the canvas content zoomed
+  ctx.restore();
+
+  // Restore canvas state
+  ctx.restore();
+
+  // Clear the inside of the spotlight to make it transparent
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.arc(spotlightX, spotlightY, spotlightRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+};
+
+// Function to redraw the entire canvas, including spotlight effect
+const drawCanvas = () => {
+  // Restore the full canvas content
+  restoreCanvasSnapshot();
+
+  // If the spotlight is enabled, draw it
+  if (spotlightEnabled) {
+    drawSpotlight();
+  }
+};
+
+// Update spotlight position dynamically on mouse movement
+canvas.addEventListener("mousemove", (e) => {
+  if (spotlightEnabled) {
+    spotlightX = e.offsetX;
+    spotlightY = e.offsetY;
+    drawCanvas(); // Redraw the canvas with updated spotlight
+  }
+});
+
+// Toggle spotlight mode with a button
+document
+  .querySelector(".toggle-spotlight-btn")
+  .addEventListener("click", () => {
+    spotlightEnabled = !spotlightEnabled;
+
+    // Save the current canvas state when enabling the spotlight
+    if (spotlightEnabled) {
+      saveCanvasSnapshot();
+    }
+
+    drawCanvas(); // Refresh canvas to apply or remove spotlight
+  });
+
+// Initialize the spotlight toggle button on page load
+document.addEventListener("DOMContentLoaded", () => {
+  const spotlightBtn = document.querySelector(".toggle-spotlight-btn");
+  spotlightBtn.textContent = spotlightEnabled
+    ? "Disable Spotlight"
+    : "Enable Spotlight";
+});
+
+
+
+// Capture the canvas as a PDF
+generatePdfBtn.addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "px",
+    format: [canvas.width, canvas.height],
+  });
+
+  // Add canvas content to the PDF
+  pdf.html(canvasContainer, {
+    callback: (doc) => {
+      doc.save("canvas-output.pdf");
+    },
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height,
+  });
+});
+
+
+canvas.addEventListener("mousemove", (e) => {
+  const offsetX = e.offsetX, offsetY = e.offsetY;
+
+  if (imageMode && imgLoaded) {
+    // Update cursor for resizing if near bottom-right corner
+    const resizeMargin = 10;
+    if (
+      offsetX > imgX + imgWidth - resizeMargin &&
+      offsetY > imgY + imgHeight - resizeMargin
+    ) {
+      canvas.style.cursor = "nwse-resize"; // Resize cursor
+    }
+    // Update cursor for dragging if inside the image bounds
+    else if (
+      offsetX > imgX &&
+      offsetX < imgX + imgWidth &&
+      offsetY > imgY &&
+      offsetY < imgY + imgHeight
+    ) {
+      canvas.style.cursor = "move"; // Drag cursor
+    }
+    // Reset cursor if not in a draggable or resizable area
+    else {
+      canvas.style.cursor = "default";
+    }
